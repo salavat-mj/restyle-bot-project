@@ -69,7 +69,8 @@ def gan_restyling(bot, update):
 
         # запуск гана
         bot.send_message(chat_id, 'Идёт обработка изображения в стиле %s' % style)
-        args = 'python ./CycleGAN/test.py --dataroot %s --name style_%s_pretrained --gpu_ids -1' % (im_dir, style)
+        gpu = torch.cuda.is_available() - 1  # 0 - gpu, -1 - cpu
+        args = 'python ./CycleGAN/test.py --dataroot %s --name style_%s_pretrained --gpu_ids %s' % (im_dir, style, gpu)
         subprocess.call(args.split())
         bot.send_photo(chat_id, photo=open(im_dir+'fake.png', "rb"))
 
