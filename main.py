@@ -6,7 +6,7 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram import InlineQueryResultVoice, InlineQueryResultAudio
 from telegram.ext.dispatcher import run_async
 from io import BytesIO
-from model import StyleTransferModel
+from model import StyleTransferModel, use_gan
 from config import token
 
 model = StyleTransferModel()
@@ -57,9 +57,12 @@ def gan_restyling(bot, update):
         content = first_image_file.pop(chat_id)
         style = update.message.text[7:]  # отрезаем '/photo2' у команды
         date = update.message.date.isoformat()
-        img_path = './testB/%s_%s.jpg' % (chat_id, date)
-        content.download(custom_path=img_path)
+        im_dir = './testB/%s_%s/' % (chat_id, date)
+        os.mkdir(im_dir)
+        content.download(custom_path=im_dir+'real.jpg')
         bot.send_message(chat_id, 'Идёт обработка изображения в стиле %s' % style)
+        use_gan(im_dir, style)
+        bot.send_message(chat_id, 'Изображение сохранено')
     else:
         bot.send_message(chat_id, 'Сперва необходимо отправить изображение-контент')
 
