@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os, shutil
 import logging
+from tempfile import mkstemp
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram import InlineQueryResultVoice, InlineQueryResultAudio
 from telegram.ext.dispatcher import run_async
@@ -8,6 +9,7 @@ from io import BytesIO
 from model import StyleTransferModel
 from config import token
 import subprocess
+import torch
 
 first_image_file = {}
 model = StyleTransferModel(
@@ -15,8 +17,8 @@ model = StyleTransferModel(
         num_steps=1000,
         style_weight=1000000,
         content_weight=1,
-        content_layers=[4],
-        style_layers=[1, 2, 3, 4, 5])
+        content_layers=[4, 5, 6, 7, 8, 9],
+        style_layers=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
 # Часть бота, отвечающая за рестайлинг
 @run_async
