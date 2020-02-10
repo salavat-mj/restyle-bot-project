@@ -84,7 +84,7 @@ class StyleTransferModel:
             style_layers=[1, 2, 3, 4, 5]):
         """При тренировке VGG каждое изображение на котором она обучалась было нормировано по всем каналам (RGB). Если мы хотим изпользовать ее для нашей модели, то мы должны реализовать нормировку и для наших изображений тоже."""
         # нейросеть предобучена обрабатывать нормализованные изображения
-        seld.device = device
+        self.device = device
         normalization_mean = torch.tensor([0.485, 0.456, 0.406]).to(self.device)
         normalization_std = torch.tensor([0.229, 0.224, 0.225]).to(self.device)
         self.normalization = Normalization(normalization_mean, normalization_std).to(self.device)
@@ -95,7 +95,7 @@ class StyleTransferModel:
         self.style_layers = ['conv_{}'.format(i) for i in style_layers]
         # Определим параметры стайл трансфера
         self.imsize = imsize
-        slef.num_steps = num_steps
+        self.num_steps = num_steps
         self.style_weight = style_weight
         self.content_weight = content_weight
 
@@ -149,7 +149,7 @@ class StyleTransferModel:
 
         return model, style_losses, content_losses
 
-    def get_input_optimizer(input_img):
+    def get_input_optimizer(self, input_img):
         """ Добоваляет содержимое тензора катринки в список изменяемых оптимизатором параметров.
         Данный оптимизатор показал себя лучше всего из различных протестированных
         """
@@ -169,8 +169,8 @@ class StyleTransferModel:
         step = 100
         scores = [0, 0]
 
-        for steps in range(0, num_steps, step):
-            for run in range(steps, steps+step):
+        for steps in range(0, self.num_steps, step):
+            for i in range(steps, steps+step):
                 def closure():
                     # correct the values
                     # это для того, чтобы значения тензора картинки не выходили за пределы [0;1]
@@ -191,8 +191,8 @@ class StyleTransferModel:
                         content_score += cl.loss
 
                     # взвешивание ошибки (домножение на альфу и бета)
-                    style_score *= style_weight
-                    content_score *= content_weight
+                    style_score *= self.style_weight
+                    content_score *= self.content_weight
                     loss = style_score + content_score
                     scores[0] = style_score
                     scores[1] = content_score
@@ -203,7 +203,7 @@ class StyleTransferModel:
 
                 optimizer.step(closure)
             # вывод инфы каждые 100 итераций
-            print("run %s:" % run)
+            print("run %s:" % steps)
             print('Style Loss : {:4f} Content Loss: {:4f}'.format(scores[0].item(), scores[1].item()))
             print()
             # Вывод промежуточных изображений
@@ -231,12 +231,6 @@ class StyleTransferModel:
         # или numpy array на ваш выбор). В телеграм боте мы получаем поток байтов BytesIO,
         # а мы хотим спрятать в этот метод всю работу с картинками, поэтому лучше принимать тут эти самые потоки
         # и потом уже приводить их к PIL, а потом и к тензору, который уже можно отдать модели.
-        # В первой итерации, когда вы переносите уже готовую модель из тетрадки с занятия сюда нужно просто
-        # перенести функцию run_style_transfer (не забудьте вынести инициализацию, которая
-        # проводится один раз в конструктор.
-        self.num_steps = num_steps
-        self.style_weight = style_weight
-        self.content_weight = content_weight
 
         style_img = self.process_image(style_img_stream, self.imsize)
         content_img = self.process_image(content_img_stream, self.imsize)

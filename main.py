@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import os, shutil
 import logging
-from tempfile import mkstemp
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram import InlineQueryResultVoice, InlineQueryResultAudio
 from telegram.ext.dispatcher import run_async
@@ -18,7 +17,7 @@ model = StyleTransferModel(
         content_weight=1,
         content_layers=[4],
         style_layers=[1, 2, 3, 4, 5])
-        
+
 # Часть бота, отвечающая за рестайлинг
 @run_async
 def take_photo(bot, update):
