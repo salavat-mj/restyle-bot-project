@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os, shutil
 import logging
+from tempfile import mkstemp
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 from telegram import InlineQueryResultVoice, InlineQueryResultAudio
 from telegram.ext.dispatcher import run_async
@@ -12,8 +13,8 @@ import subprocess
 first_image_file = {}
 model = StyleTransferModel(
         imsize=256,
-        num_steps=1000,
-        style_weight=1000000,
+        num_steps=500,
+        style_weight=100000,
         content_weight=1,
         content_layers=[4],
         style_layers=[1, 2, 3, 4, 5])

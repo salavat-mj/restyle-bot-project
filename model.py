@@ -7,8 +7,9 @@ import torch.optim as optim
 import torchvision.transforms as transforms
 import torchvision.models as models
 import copy
+import datetime
 
-
+now = datetime.datetime.now
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 cnn = models.vgg19(pretrained=True).features.to(device).eval()
 
@@ -168,18 +169,13 @@ class StyleTransferModel:
 
         step = 100
         scores = [0, 0]
-
-        for steps in range(0, self.num_steps, step):
-            for i in range(steps, steps+step):
+        run = [0]
+        time = now()
+        while run[0] < self.num_steps:
+            for i in range(5):
                 def closure():
-                    # correct the values
-                    # это для того, чтобы значения тензора картинки не выходили за пределы [0;1]
                     input_img.data.clamp_(0, 1)
-
-                    # зануляем градиент
                     optimizer.zero_grad()
-
-                    # пропускаем картинку через всё нейросеть
                     model(input_img)
 
                     # явно описываем наши лоссы
@@ -194,16 +190,18 @@ class StyleTransferModel:
                     style_score *= self.style_weight
                     content_score *= self.content_weight
                     loss = style_score + content_score
-                    scores[0] = style_score
-                    scores[1] = content_score
-                    # обратное распространение ошибки
                     loss.backward()
 
+                    run[0] += 1
+                    scores[0] = style_score
+                    scores[1] = content_score
                     return style_score + content_score
 
                 optimizer.step(closure)
+
             # вывод инфы каждые 100 итераций
-            print("run %s:" % steps)
+            print("run %s:" % run)
+            print("elapsed time :", now() - time)
             print('Style Loss : {:4f} Content Loss: {:4f}'.format(scores[0].item(), scores[1].item()))
             print()
             # Вывод промежуточных изображений
