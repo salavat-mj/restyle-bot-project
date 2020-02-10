@@ -10,4 +10,4 @@
 
 ## Для запуска
 - `python main.py` - вручную
-- [bot.ipynb](https://colab.research.google.com/drive/1vRvDDxT0t3ISgIXifpa2bDiKiwnwTqoU#scrollTo=m6_mF6GTDzTL&uniqifier=1) - на мощностях Google Colab
+- [bot.ipynb](https://colab.research.google.com/drive/1vRvDDxT0t3ISgIXifpa2bDiKiwnwTqoU) - на мощностях Google Colab
