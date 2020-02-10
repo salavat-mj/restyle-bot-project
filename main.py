@@ -57,8 +57,8 @@ def gan_restyling(bot, update):
         content = first_image_file.pop(chat_id)
         style = update.message.text[7:]  # отрезаем '/photo2' у команды
         date = update.message.date.isoformat()
-        im_dir = './testB/%s_%s/' % (chat_id, date)
-        os.mkdir(im_dir)
+        im_dir = './temp/%s_%s/testB/' % (chat_id, date)
+        os.makedirs(im_dir)
         content.download(custom_path=im_dir+'real.jpg')
         bot.send_message(chat_id, 'Идёт обработка изображения в стиле %s' % style)
         use_gan(im_dir, style)
