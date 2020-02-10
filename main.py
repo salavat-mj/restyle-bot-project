@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os
+import os, shutil
 import logging
 from tempfile import mkstemp
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
@@ -59,10 +59,12 @@ def gan_restyling(bot, update):
         date = update.message.date.isoformat()
         im_dir = './temp/%s_%s/testB/' % (chat_id, date)
         os.makedirs(im_dir)
-        content.download(custom_path=im_dir+'real.jpg')
+        content.download(custom_path=im_dir+'real.png')
         bot.send_message(chat_id, 'Идёт обработка изображения в стиле %s' % style)
         use_gan(im_dir, style)
-        bot.send_message(chat_id, 'Изображение сохранено')
+        bot.send_photo(chat_id, photo=open(im_dir+'fake.png', "rb"))
+        shutil.rmtree(im_dir[:-6], ignore_errors=True)
+        #bot.send_message(chat_id, 'Изображение сохранено')
     else:
         bot.send_message(chat_id, 'Сперва необходимо отправить изображение-контент')
 

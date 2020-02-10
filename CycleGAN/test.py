@@ -30,7 +30,6 @@ import os
 from options.test_options import TestOptions
 from data import create_dataset
 from models import create_model
-#from util.visualizer import save_images
 from util.util import tensor2im, save_image
 
 if __name__ == '__main__':
@@ -46,7 +45,6 @@ if __name__ == '__main__':
     #opt.dataroot = 'testB'
     opt.model = 'test'
     opt.no_dropout = True
-    opt.results_dir = opt.dataroot
 
     dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
     model = create_model(opt)      # create a model given opt.model and other options

@@ -12,7 +12,6 @@ import subprocess
 
 def use_gan(im_dir, style):
     args = 'python ./CycleGAN/test.py --dataroot %s --name style_%s_pretrained --gpu_ids -1' % (im_dir, style)
-    print(args)
     subprocess.call(args.split())
 
 
