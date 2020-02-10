@@ -9,4 +9,5 @@
 - `CycleGAN` - урезанная часть проекта, достаточная для запуска кастомного `test.py`
 
 ## Для запуска
-`python main.py`
+- `python main.py` - вручную
+- [bot.ipynb](https://colab.research.google.com/drive/1vRvDDxT0t3ISgIXifpa2bDiKiwnwTqoU#scrollTo=m6_mF6GTDzTL&uniqifier=1) - на мощностях Google Colab
