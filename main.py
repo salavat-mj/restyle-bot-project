@@ -14,8 +14,8 @@ import torch
 first_image_file = {}
 model = StyleTransferModel(
         imsize=256,
-        num_steps=1000,
-        style_weight=1000000,
+        num_steps=500,
+        style_weight=100000,
         content_weight=1,
         content_layers=[4, 5, 6, 7, 8, 9],
         style_layers=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
