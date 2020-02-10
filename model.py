@@ -161,6 +161,7 @@ class StyleTransferModel:
         """Дальше стандартный цикл обучения, но что это за closure?<br /> Это функция, которая вызывается во время каждого прохода, чтобы пересчитать loss. Без нее ничего не получется так как у нас своя функция ошибки"""
         """Run the style transfer."""
 
+        print('___________________________________')
         print('Building the style transfer model..')
         model, style_losses, content_losses = self.get_style_model_and_losses(style_img, content_img)
 
@@ -203,7 +204,7 @@ class StyleTransferModel:
             print("run %s:" % run)
             print("elapsed time :", now() - time)
             print('Style Loss : {:4f} Content Loss: {:4f}'.format(scores[0].item(), scores[1].item()))
-            print()
+            #print()
             # Вывод промежуточных изображений
             #img = transforms.ToPILImage()(input_img.cpu().clone().squeeze(0))
             #img.save('{}.png'.format(params[0]), 'png')

@@ -12,13 +12,21 @@ import subprocess
 import torch
 
 first_image_file = {}
-model = StyleTransferModel(
+model_stndrt = StyleTransferModel(
         imsize=256,
         num_steps=500,
         style_weight=100000,
         content_weight=1,
+        content_layers=[4],
+        style_layers=[1, 2, 3, 4, 5])
+model_strong = StyleTransferModel(
+        imsize=256,
+        num_steps=1000,
+        style_weight=1000000,
+        content_weight=1,
         content_layers=[4, 5, 6, 7, 8, 9],
         style_layers=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+model = model_stndrt
 
 # Часть бота, отвечающая за рестайлинг
 @run_async
