@@ -10,10 +10,15 @@ from model import StyleTransferModel
 from config import token
 import subprocess
 
-
-model = StyleTransferModel()
 first_image_file = {}
-
+model = StyleTransferModel(
+        imsize=256,
+        num_steps=1000,
+        style_weight=1000000,
+        content_weight=1,
+        content_layers=[4],
+        style_layers=[1, 2, 3, 4, 5])
+        
 # Часть бота, отвечающая за рестайлинг
 @run_async
 def take_photo(bot, update):
