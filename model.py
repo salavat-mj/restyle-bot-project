@@ -1,13 +1,14 @@
 from PIL import Image
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-
 import torchvision.transforms as transforms
 import torchvision.models as models
-
 import copy
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 """# Transfer
 
@@ -68,14 +69,22 @@ class StyleLoss(nn.Module):
             self.loss = F.mse_loss(G, self.target)
             return input
 
+"""При тренировке VGG каждое изображение на котором она обучалась было нормировано по всем каналам (RGB). Если мы хотим изпользовать ее для нашей модели, то мы должны реализовать нормировку и для наших изображений тоже."""
+
+# хардкод параметры из статьи (нормировка ргб)
+cnn_normalization_mean = torch.tensor([0.485, 0.456, 0.406]).to(device)
+cnn_normalization_std = torch.tensor([0.229, 0.224, 0.225]).to(device)
+
 class Normalization(nn.Module):
         def __init__(self, mean, std):
             super(Normalization, self).__init__()
             # .view the mean and std to make them [C x 1 x 1] so that they can
             # directly work with image Tensor of shape [B x C x H x W].
             # B is batch size. C is number of channels. H is height and W is width.
-            self.mean = torch.tensor(mean).view(-1, 1, 1)
-            self.std = torch.tensor(std).view(-1, 1, 1)
+            #self.mean = torch.tensor(mean).view(-1, 1, 1)
+            #self.std = torch.tensor(std).view(-1, 1, 1)
+            self.mean = mean.clone().view(-1, 1, 1)
+            self.std = std.clone().view(-1, 1, 1)
 
         def forward(self, img):
             # normalize img
@@ -83,31 +92,15 @@ class Normalization(nn.Module):
 
 """Теперь соберем это все в одну функцию, которая отдаст на выходе модель и две функции потерь
 
-Определим после каких уровней мы будем счиатать ошибки стиля, а после каких ошибки контента
+Определим предобученную модель
 """
 
-# номера -- это эвристика
-def conv_layers(*args):
-    return ['conv_{}'.format(i) for i in args]
-
-content_layers_default = conv_layers(*[4, 5, 6, 7, 8, 9])
-style_layers_default = conv_layers(*[1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-
-"""Определим предобученную модель"""
-
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 cnn = models.vgg19(pretrained=True).features.to(device).eval()
-
-"""При тренировке VGG каждое изображение на котором она обучалась было нормировано по всем каналам (RGB). Если мы хотим изпользовать ее для нашей модели, то мы должны реализовать нормировку и для наших изображений тоже."""
-
-# хардкод параметры из статьи (нормировка ргб)
-cnn_normalization_mean = torch.tensor([0.485, 0.456, 0.406]).to(device)
-cnn_normalization_std = torch.tensor([0.229, 0.224, 0.225]).to(device)
 
 def get_style_model_and_losses(cnn, normalization_mean, normalization_std,
                                    style_img, content_img,
-                                   content_layers=content_layers_default,
-                                   style_layers=style_layers_default):
+                                   content_layers=['conv_4'],
+                                   style_layers=['conv_1', 'conv_2', 'conv_3', 'conv_4', 'conv_5']):
         cnn = copy.deepcopy(cnn)
 
         # normalization module
@@ -179,9 +172,13 @@ def get_input_optimizer(input_img):
 
 """Дальше стандартный цикл обучения, но что это за closure?<br /> Это функция, которая вызывается во время каждого прохода, чтобы пересчитать loss. Без нее ничего не получется так как у нас своя функция ошибки"""
 
+# номера -- это эвристика
+def conv_layers(*args):
+    return ['conv_{}'.format(i) for i in args]
+
 def run_style_transfer(cnn, normalization_mean, normalization_std,
-                        content_img, style_img, input_img, num_steps=1000,
-                        style_weight=1000000, content_weight=1):
+                        content_img, style_img, input_img, num_steps=500,
+                        style_weight=100000, content_weight=1, layers=None):
         """Run the style transfer."""
         # Важные аргументы:
         # num_steps -- количество эпох (не оч важный)
@@ -189,10 +186,16 @@ def run_style_transfer(cnn, normalization_mean, normalization_std,
         # content_weight -- бета (можно попробовать 1, 0, -1)
         # практика показывает, что картинки интереснее, когда мы забиваем на контент
 
+        content_layers = conv_layers(*[8])
+        style_layers = conv_layers(*range(1, 11))
+        if layers:
+            content_layers = conv_layers(*layers[0])
+            style_layers = conv_layers(*layers[1])
 
         print('Building the style transfer model..')
         model, style_losses, content_losses = get_style_model_and_losses(cnn,
-            normalization_mean, normalization_std, style_img, content_img)
+            normalization_mean, normalization_std, style_img, content_img,
+            content_layers=content_layers, style_layers=style_layers)
         optimizer = get_input_optimizer(input_img)
 
         print('Optimizing..')
@@ -237,7 +240,11 @@ def run_style_transfer(cnn, normalization_mean, normalization_std,
                     print('Style Loss : {:4f} Content Loss: {:4f}'.format(
                         style_score.item(), content_score.item()))
                     print()
-
+                    # Вывод промежуточных изображений
+                    #img = transforms.ToPILImage()(input_img.cpu().clone().squeeze(0))
+                    #img.save('{}.png'.format(params[0]), 'png')
+                    #plt.imshow(img)
+                    #plt.pause(0.001)
                 return style_score + content_score
 
             optimizer.step(closure)
@@ -261,7 +268,6 @@ class StyleTransferModel:
             transforms.Resize(imsize),  # нормируем размер изображения
             transforms.CenterCrop(imsize),
             transforms.ToTensor()])  # превращаем в удобный формат
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
     def transfer_style(self, content_img_stream, style_img_stream):
@@ -277,18 +283,17 @@ class StyleTransferModel:
         # Для наглядности мы сначала переводим ее в тензор, а потом обратно
         style_img = self._process_image(style_img_stream)#.cpu()[0]
         content_img = self._process_image(content_img_stream)#.cpu()[0]
-        #input_img = content_img.clone()
+        input_img = content_img.clone()
         # if you want to use white noise instead uncomment the below line:
-        input_img = torch.randn(content_img.data.size(), device=device)
+        #input_img = torch.randn(content_img.data.size(), device=device)
 
         output = run_style_transfer(cnn, cnn_normalization_mean, cnn_normalization_std,
                                     content_img, style_img, input_img,
-                                    num_steps=500, style_weight=100000, content_weight=1)
+                                    num_steps=1000, style_weight=1000000, content_weight=1)
         return self.to_PIL_img(output.cpu()[0])
 
     # В run_style_transfer используется много внешних функций, их можно добавить как функции класса
     def _process_image(self, img_stream):
-        print(self.device)
         image = Image.open(img_stream)
         image = self.loader(image).unsqueeze(0)
-        return image.to(self.device, torch.float)
+        return image.to(device, torch.float)

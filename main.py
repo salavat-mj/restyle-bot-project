@@ -9,37 +9,12 @@ from io import BytesIO
 from model import StyleTransferModel
 from config import token
 
-#model = StyleTransferModel()
-#first_image_file = {}
+model = StyleTransferModel()
+first_image_file = {}
 
+import torchvision.transforms as transforms
 
-@run_async
-def onstart(bot, update):
-    logger.info('start command from %s' % update.message.from_user.first_name)
-    bot.send_message(chat_id=update.message.chat_id, text='Привет, я рестайл-бот. Я перересую ваши изображения.')
-    onhelp(bot, update)
-
-
-@run_async
-def onhelp(bot, update):
-    logger.info('help command from %s' % update.message.from_user.first_name)
-    bot.send_message(chat_id=update.message.chat_id, text='''
-Чтобы перерисовать изображение, необходимо выполнить 2 действия:
-1. Отправить изображение, которое хотите перерисовать.
-2. Отправить изображиние-стиль или выбрать стиль из предложенных авторов.
-
-Команды:
-/help - помощь и описание
-/photo2painting - перересует ваше следующее изображение в картину
-'''.strip())
-
-@run_async
-def onunknown(bot, update):
-    logger.info('unknown command from %s' %
-                update.message.from_user.first_name)
-    bot.send_message(chat_id=update.message.chat_id,
-                     text='Простите, я вас не понял. Это должно помочь /help.')
-
+# Часть бота, отвечающая за рестайлинг
 @run_async
 def take_photo(bot, update):
     chat_id = update.message.chat_id
@@ -48,11 +23,9 @@ def take_photo(bot, update):
     image_info = update.message.photo[-1]
     image_file = bot.get_file(image_info)
     #bot.send_photo(chat_id, image_info)
-    bot.send_message(chat_id, 'Изображние получено')
     if chat_id in first_image_file:
-        content = first_image_file[chat_id]
-        del first_image_file[chat_id]
-
+        #bot.send_message(chat_id, 'Изображние получено')
+        content = first_image_file.pop(chat_id)
         content_image_stream = BytesIO()
         content.download(out=content_image_stream)
         style_image_stream = BytesIO()
@@ -69,8 +42,55 @@ def take_photo(bot, update):
         print("Sent Photo to user")
     else:
         first_image_file[chat_id] = image_file
-        bot.send_message(chat_id, 'Выбирите действие')
+        bot.send_message(chat_id, '''
+Отправьте изображиние-стиль или выбирите готовый стиль:
+/photo2cezanne - Поль Сезанн
+/photo2monet - Клод Моне
+/photo2ukiyoe - Укиё-э
+/photo2vangogh - Винсент ван Гог
+''')
 
+@run_async
+def gan_restyling(bot, update):
+    chat_id = update.message.chat_id
+    if chat_id in first_image_file:
+        content = first_image_file.pop(chat_id)
+        style = update.message.text[7:]  # отрезаем '/photo2' у команды
+        date = update.message.date.isoformat()
+        img_path = './testB/%s_%s.jpg' % (chat_id, date)
+        content.download(custom_path=img_path)
+        bot.send_message(chat_id, 'Идёт обработка изображения в стиле %s' % style)
+    else:
+        bot.send_message(chat_id, 'Сперва необходимо отправить изображение-контент')
+
+# Стандартная часть
+@run_async
+def onstart(bot, update):
+    logger.info('start command from %s' % update.message.from_user.first_name)
+    bot.send_message(chat_id=update.message.chat_id, text='Привет, я рестайл-бот. Я перересую ваши изображения.')
+    onhelp(bot, update)
+
+@run_async
+def onhelp(bot, update):
+    logger.info('help command from %s' % update.message.from_user.first_name)
+    bot.send_message(chat_id=update.message.chat_id, text='''
+Для рестайлинга необходимо 2 изображения: контент и стиль.
+
+Вам понадобится выполнить 2 действия:
+1. Отправить изображение-контент, которое хотите перерисовать.
+2. Отправить изображиние-стиль или выбрать готовый стиль:
+/photo2cezanne - Поль Сезанн
+/photo2monet - Клод Моне
+/photo2ukiyoe - Укиё-э
+/photo2vangogh - Винсент ван Гог
+'''.strip())
+
+@run_async
+def onunknown(bot, update):
+    logger.info('unknown command from %s' %
+                update.message.from_user.first_name)
+    bot.send_message(chat_id=update.message.chat_id,
+                     text='Простите, я вас не понял. Это должно помочь /help.')
 
 def onerror(bot, update, error):
     logger.warn('Update "%s" caused error "%s"' % (update, error))
@@ -80,6 +100,7 @@ def main():
     dp = updater.dispatcher
     dp.add_handler(CommandHandler('start', onstart))
     dp.add_handler(CommandHandler('help', onhelp))
+    dp.add_handler(CommandHandler(['photo2cezanne', 'photo2monet', 'photo2ukiyoe', 'photo2vangogh'], gan_restyling))
     dp.add_handler(MessageHandler([Filters.command], onunknown))
     dp.add_handler(MessageHandler([Filters.photo], take_photo))
     dp.add_error_handler(onerror)
