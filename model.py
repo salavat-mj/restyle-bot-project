@@ -8,12 +8,6 @@ import torchvision.transforms as transforms
 import torchvision.models as models
 import copy
 
-import subprocess
-
-def use_gan(im_dir, style):
-    args = 'python ./CycleGAN/test.py --dataroot %s --name style_%s_pretrained --gpu_ids -1' % (im_dir, style)
-    subprocess.call(args.split())
-
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
